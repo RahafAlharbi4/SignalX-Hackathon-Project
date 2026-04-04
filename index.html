@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SignalX — Scenario Edition</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#040d1d; --bg2:#0a1630; --panel:rgba(255,255,255,.05); --panel2:rgba(255,255,255,.035);
+      --border:rgba(255,255,255,.10); --text:#eef5ff; --muted:#9eb0d4; --teal:#2dd4bf; --blue:#60a5fa;
+      --amber:#f59e0b; --green:#22c55e; --danger:#fb7185; --shadow:0 18px 40px rgba(0,0,0,.38); --radius:22px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:"Cairo",system-ui,-apple-system,Segoe UI,Arial,sans-serif; color:var(--text);
+      background:
+        radial-gradient(900px 520px at 82% 12%, rgba(45,212,191,.14), transparent 60%),
+        radial-gradient(1100px 760px at 12% 88%, rgba(96,165,250,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+    }
+    .shell{display:grid;grid-template-columns:320px 1fr;min-height:100vh}
+    .sidebar{
+      position:sticky;top:0;height:100vh;padding:20px 16px;border-left:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));backdrop-filter:blur(12px);overflow:auto;
+    }
+    .brand{display:flex;gap:12px;align-items:center;padding:10px 10px 16px;border-bottom:1px solid var(--border);margin-bottom:16px}
+    .logo{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;font-size:24px;font-weight:900;color:#fff;background:linear-gradient(135deg,var(--blue),var(--teal));box-shadow:var(--shadow)}
+    .brand h1{margin:0;font-size:22px;line-height:1}
+    .brand p{margin:5px 0 0;color:var(--muted);font-size:12px}
+    .story{
+      border:1px solid rgba(45,212,191,.28);background:linear-gradient(135deg, rgba(45,212,191,.09), rgba(96,165,250,.08));
+      border-radius:18px;padding:14px;line-height:1.8;color:#dff7ff;font-size:13px;margin-bottom:14px;box-shadow:var(--shadow);
+    }
+    .nav{display:grid;gap:10px;margin-bottom:16px}
+    .nav .item{
+      display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:16px;border:1px solid var(--border);
+      background:var(--panel2);color:var(--muted)
+    }
+    .nav .item.active{color:var(--text);background:rgba(45,212,191,.10);border-color:rgba(45,212,191,.30)}
+    .badge{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
+    .panel{
+      border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:12px;box-shadow:var(--shadow);margin-bottom:10px;
+    }
+    .panel h3{margin:0 0 10px;font-size:14px}
+    .city-card{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:12px;box-shadow:var(--shadow);margin-bottom:10px}
+    .city-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .city-name{font-weight:900;font-size:18px}
+    .city-sub{font-size:12px;color:var(--muted)}
+    .city-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .mini{border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:14px;padding:9px 10px;font-size:12px;color:var(--muted)}
+    .mini strong{display:block;color:var(--text);font-size:18px;margin-top:4px}
+    .legend h3{margin:0 0 10px;font-size:14px}
+    .legend-row{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:7px 0}
+    .swatch{width:12px;height:12px;border-radius:50%}
+    .main{padding:18px 18px 30px}
+    .hero{border:1px solid rgba(255,255,255,.08);background:linear-gradient(135deg, rgba(10,22,48,.78), rgba(5,16,34,.88));border-radius:26px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+    .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+    .hero h2{margin:0;font-size:38px;line-height:1.1}
+    .hero p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.9}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button{
+      border:none;cursor:pointer;border-radius:14px;padding:11px 14px;color:var(--text);font-family:inherit;font-size:13px;
+      background:rgba(255,255,255,.06);border:1px solid var(--border);box-shadow:var(--shadow)
+    }
+    .primary{background:linear-gradient(135deg, rgba(96,165,250,.22), rgba(45,212,191,.22));border-color:rgba(96,165,250,.28)}
+    .statusbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .status-pill{padding:8px 11px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px}
+    .status-pill strong{color:var(--text)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .card{
+      grid-column:span 3;border:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.03));
+      border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);overflow:hidden;position:relative
+    }
+    .card h3{margin:0 0 8px;color:var(--muted);font-size:13px}
+    .value{font-size:30px;font-weight:900;line-height:1}
+    .sub{margin-top:6px;color:var(--muted);font-size:12px}
+    .map-card{grid-column:span 8;padding:0;overflow:hidden;position:relative}
+    #map{width:100%;height:640px;border-radius:var(--radius);background:#0a1222}
+    .map-overlay{position:absolute;right:18px;top:18px;z-index:1000;display:grid;gap:8px;pointer-events:none}
+    .overlay-chip{
+      pointer-events:auto;padding:10px 12px;border-radius:14px;background:rgba(4,13,29,.80);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-size:12px;box-shadow:var(--shadow);backdrop-filter:blur(10px);
+    }
+    .side-card{grid-column:span 4;display:flex;flex-direction:column;gap:12px}
+    .inner{border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:18px;padding:12px}
+    .inner h4{margin:0 0 10px;font-size:14px}
+    .table{display:grid;gap:8px}
+    .row{display:grid;grid-template-columns:1.1fr .9fr .9fr .9fr;gap:8px;align-items:center;border:1px solid var(--border);border-radius:14px;padding:10px;background:rgba(255,255,255,.025);font-size:12px;color:var(--muted)}
+    .row strong{color:var(--text)}
+    .row.header{background:transparent;border:none;padding:0 2px 4px}
+    .half{grid-column:span 6}
+    .wide{grid-column:span 12}
+    .chart-wrap{height:280px}
+    .chart-wrap canvas{width:100%!important;height:100%!important}
+    .footer-note{color:var(--muted);font-size:12px;line-height:1.9}
+    .pulse{animation:pulse 2.2s infinite ease-in-out}
+    @keyframes pulse{0%{transform:scale(1);opacity:.72}50%{transform:scale(1.14);opacity:1}100%{transform:scale(1);opacity:.72}}
+    .vehicle{width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(5,12,26,.92);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 18px rgba(0,0,0,.32);font-size:17px}
+    .vehicle.app{box-shadow:0 8px 18px rgba(0,0,0,.32),0 0 20px rgba(45,212,191,.28)}
+    .vehicle.store{box-shadow:0 8px 18px rgba(0,0,0,.32),0 0 20px rgba(96,165,250,.28)}
+    .city-glow{filter:drop-shadow(0 0 16px rgba(45,212,191,.35))}
+    .popup{direction:rtl;text-align:right;font-family:"Cairo",sans-serif;line-height:1.8;min-width:200px}
+    .popup .top{font-weight:900;color:#0f172a}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;margin-left:6px;color:#fff}
+    .pill.app{background:#18bfae}.pill.store{background:#4f8efc}.pill.move{background:#16a34a}.pill.stop{background:#f59e0b;color:#111827}
+    .alert-box{border:1px solid rgba(251,113,133,.35);background:rgba(251,113,133,.08);border-radius:16px;padding:12px;color:#ffe3ea}
+    .recommend-box{border:1px solid rgba(45,212,191,.30);background:rgba(45,212,191,.07);border-radius:16px;padding:12px;line-height:1.8}
+    .time-readout{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px;margin-top:8px}
+    input[type="range"]{width:100%}
+    .scenario-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .scenario-btn{padding:10px 12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);font-family:inherit;cursor:pointer;transition:.2s}
+    .scenario-btn:hover,.scenario-btn.active{background:rgba(45,212,191,.12);border-color:rgba(45,212,191,.28)}
+    .scenario-note{margin-top:10px;color:#dff7ff;font-size:12px;line-height:1.8}
+    @media (max-width:1100px){
+      .shell{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto;border-left:none;border-bottom:1px solid var(--border)}
+      .card,.map-card,.side-card,.half,.wide{grid-column:span 12}
+      .hero h2{font-size:30px}
+      #map{height:460px}
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">S</div>
+      <div><h1>SignalX</h1><p>GigScope | Saudi Delivery
+          Signal Intelligence</p></div>
+    </div>
+
+    <div class="story">
+      تعتمد المنصة على نماذج تحليل زمني تقوم بمحاكاة أنماط الطلب خلال اليوم، حيث يمكن استعراض سيناريوهات تشغيل مختلفة مثل فترات الذروة والانخفاض، مع انعكاس مباشر على المؤشرات التشغيلية وتوليد توصيات ذكية لدعم اتخاذ القرار.
+    </div>
+
+    <div class="nav">
+      <div class="item active"><span>Quick Scenarios</span><span class="badge">Ready</span></div>
+      <div class="item"><span>Time Intelligence</span><span class="badge">Slider</span></div>
+      <div class="item"><span>Pressure Alerting</span><span class="badge">Live</span></div>
+      <div class="item"><span>Generate Recommendation</span><span class="badge">Decision</span></div>
+    </div>
+
+    <div class="panel">
+      <h3>Time Slider</h3>
+      <input id="timeSlider" type="range" min="0" max="23" step="1" value="18">
+      <div class="time-readout">
+        <span>الفترة: <strong id="timeLabel">المساء</strong></span>
+        <span>الساعة: <strong id="hourLabel">18:00</strong></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Quick Scenarios</h3>
+      <div class="scenario-grid">
+        <button class="scenario-btn" data-hour="8" data-note="Morning commute and early order flow.">Morning Rush</button>
+        <button class="scenario-btn" data-hour="13" data-note="Restaurant demand concentration around lunch.">Lunch Peak</button>
+        <button class="scenario-btn active" data-hour="19" data-note="Highest delivery density and strongest city pressure.">Evening Surge</button>
+        <button class="scenario-btn" data-hour="23" data-note="Reduced fleet requirement and lower demand.">Night Low</button>
+      </div>
+      <div class="scenario-note" id="scenarioNote">Highest delivery density and strongest city pressure.</div>
+    </div>
+
+    <div class="panel alert-box">
+      <h3 style="margin-top:0">Pressure Alert</h3>
+      <div id="pressureAlert">لا يوجد ضغط حرج حاليًا.</div>
+    </div>
+
+    <div class="panel recommend-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <h3 style="margin:0">Generate Recommendation</h3>
+        <button class="primary" id="recommendBtn">Generate</button>
+      </div>
+      <div id="recommendationText" style="margin-top:10px;color:#dff7ff">اضغطي الزر لتوليد قرار تشغيلي حسب الوقت والضغط الحالي.</div>
+    </div>
+
+    <div class="city-card">
+      <div class="city-head"><div><div class="city-name">الرياض</div><div class="city-sub">المدينة الأعلى كثافة</div></div><span class="badge">Central Hub</span></div>
+      <div class="city-grid"><div class="mini">نشاط المركبات<strong id="riyadh-vehicles">—</strong></div><div class="mini">تقدير العمال<strong id="riyadh-workers">—</strong></div></div>
+    </div>
+    <div class="city-card">
+      <div class="city-head"><div><div class="city-name">جدة</div><div class="city-sub">نطاق ساحلي عالي الطلب</div></div><span class="badge">Coastal Flow</span></div>
+      <div class="city-grid"><div class="mini">نشاط المركبات<strong id="jeddah-vehicles">—</strong></div><div class="mini">تقدير العمال<strong id="jeddah-workers">—</strong></div></div>
+    </div>
+    <div class="city-card">
+      <div class="city-head"><div><div class="city-name">الدمام</div><div class="city-sub">محور شرقي متنامٍ</div></div><span class="badge">Eastern Node</span></div>
+      <div class="city-grid"><div class="mini">نشاط المركبات<strong id="dammam-vehicles">—</strong></div><div class="mini">تقدير العمال<strong id="dammam-workers">—</strong></div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h2>تحليل نشاط التوصيل عبر الوقت</h2>
+          <p>تعتمد المنصة على سيناريوهات تشغيل ديناميكية تعكس التغيرات الزمنية في الطلب، حيث يتم تحديث الكثافة، الحركة، ومستوى الضغط التشغيلي بشكل لحظي، مع توفير رؤى تحليلية تدعم اتخاذ القرار.</p>
+        </div>
+        <div class="controls">
+          <button class="primary" id="refreshBtn">تحديث البيانات</button>
+          <button id="toggleHeatBtn">إخفاء / إظهار Heatmap</button>
+          <button id="toggleMoveBtn">إيقاف / تشغيل الحركة</button>
+          <button id="toggleRoutesBtn">إظهار / إخفاء المسارات</button>
+        </div>
+      </div>
+      <div class="statusbar">
+        <div class="status-pill">الرياض <strong id="pill-riyadh">—</strong></div>
+        <div class="status-pill">جدة <strong id="pill-jeddah">—</strong></div>
+        <div class="status-pill">الدمام <strong id="pill-dammam">—</strong></div>
+        <div class="status-pill">المركبات المتحركة <strong id="movingCount">—</strong></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><h3>Dominant City</h3><div class="value" id="dominantCity">—</div><div class="sub">المدينة ذات النشاط الأعلى لحظيًا</div></div>
+      <div class="card"><h3>Average Gap</h3><div class="value" id="avgGap">—</div><div class="sub">متوسط الفجوة التقديرية بين الرسمي والمرصود</div></div>
+      <div class="card"><h3>Live Vehicles</h3><div class="value" id="totalVehicles">—</div><div class="sub">إجمالي المركبات والدراجات المعروضة</div></div>
+      <div class="card"><h3>Estimated Workers</h3><div class="value" id="totalWorkers">—</div><div class="sub">إجمالي تقديري موحد عبر المدن الثلاث</div></div>
+      <div class="card"><h3>AI Confidence</h3><div class="value" id="aiConfidence">—</div><div class="sub">درجة موثوقية التقدير</div></div>
+      <div class="card"><h3>Next Hour Prediction</h3><div class="value" id="prediction">—</div><div class="sub">توقع النشاط خلال الساعة القادمة</div></div>
+      <div class="card"><h3>Scenario Change</h3><div class="value" id="scenarioDiff">—</div><div class="sub">التغير بعد اختيار السيناريو</div></div>
+
+      <div class="card map-card">
+        <div id="map"></div>
+        <div class="map-overlay">
+          <div class="overlay-chip">🕒 Quick scenarios enabled</div>
+          <div class="overlay-chip">🔥 ضغط يتغير حسب الساعة</div>
+          <div class="overlay-chip">📍 توصيات تشغيلية فورية</div>
+        </div>
+      </div>
+
+      <div class="card side-card">
+        <div class="inner">
+          <h4>City Ranking</h4>
+          <div class="table" id="rankingTable">
+            <div class="row header"><div>المدينة</div><div>العمال</div><div>المركبات</div><div>الفجوة</div></div>
+          </div>
+        </div>
+        <div class="inner chart-wrap"><canvas id="cityChart"></canvas></div>
+      </div>
+
+      <div class="card half">
+        <h3>Time vs Activity Profile</h3>
+        <div class="chart-wrap"><canvas id="activityChart"></canvas></div>
+      </div>
+      <div class="card half">
+        <h3>Zones by City</h3>
+        <div class="chart-wrap"><canvas id="zonesChart"></canvas></div>
+      </div>
+
+      <div class="card wide">
+        <h3>Decision Layer</h3>
+        <div class="footer-note">
+          في Morning Rush يوضح النظام التدفق المبكر، وفي Lunch Peak يركز على طلب المطاعم، وفي Evening Surge يظهر أعلى ضغط تشغيلي، وفي Night Low يقترح خفض الأسطول مع الحفاظ على التغطية الذكية.
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+    const API_BASE = "https://signalx-api-66mo.onrender.com";
+  const CITY_META = {
+    riyadh:{label:"الرياض",center:[24.7136,46.6753],spread:0.22,weight:1.0,color:"#18bfae",routes:8},
+    jeddah:{label:"جدة",center:[21.5433,39.1728],spread:0.18,weight:0.82,color:"#4f8efc",routes:6},
+    dammam:{label:"الدمام",center:[26.4207,50.0888],spread:0.16,weight:0.70,color:"#f59e0b",routes:5}
+  };
+  const CITY_KEYS = Object.keys(CITY_META);
+
+  let selectedHour = 19;
+  let heatVisible = true, moving = true, routesVisible = true;
+  let cityChart, activityChart, zonesChart;
+  const vehiclesStore = [], routeStore = [];
+  let latestStats = [];
+
+  const map = L.map("map",{zoomControl:true,scrollWheelZoom:false,doubleClickZoom:false,keyboard:false}).setView([23.8859,45.0792],6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18, attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
+
+  const heatLayer = L.heatLayer([],{
+    radius:30, blur:24, maxZoom:10, minOpacity:0.35,
+    gradient:{0.2:"#0ea5e9",0.4:"#10b981",0.7:"#f59e0b",1.0:"#ef4444"}
+  }).addTo(map);
+
+  const vehicleLayer = L.layerGroup().addTo(map);
+  const routeLayer = L.layerGroup().addTo(map);
+  const cityGlowLayer = L.layerGroup().addTo(map);
+
+  function fmt(n){ return Number(n || 0).toLocaleString("en-US"); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+  function getTimeProfile(hour){
+    if(hour >= 5 && hour < 11) return {label:"الصباح", factor:0.82, heat:0.85};
+    if(hour >= 11 && hour < 16) return {label:"الظهيرة", factor:0.96, heat:1.00};
+    if(hour >= 16 && hour < 22) return {label:"المساء", factor:1.16, heat:1.18};
+    return {label:"الليل", factor:0.68, heat:0.72};
+  }
+
+  function updateTimeUI(){
+    const p = getTimeProfile(selectedHour);
+    document.getElementById("hourLabel").textContent = `${String(selectedHour).padStart(2,"0")}:00`;
+    document.getElementById("timeLabel").textContent = p.label;
+  }
+
+  function vehicleIcon(type, operatorType){
+    const emoji = type === "motorcycle" ? "🏍️" : "🚗";
+    const cls = operatorType === "store" ? "store" : "app";
+    return L.divIcon({html:`<div class="vehicle ${cls}">${emoji}</div>`, className:"", iconSize:[30,30], iconAnchor:[15,15]});
+  }
+
+  function popupHtml(v){
+    const city = CITY_META[v.city].label;
+    const opClass = v.operator_type === "store" ? "store" : "app";
+    const opLabel = v.operator_type === "store" ? "متجر" : "تطبيق";
+    const moveClass = v.movable ? "move" : "stop";
+    const moveLabel = v.movable ? "في حركة" : "متوقفة";
+    const typeLabel = v.vehicle_type === "motorcycle" ? "دراجة توصيل" : "مركبة توصيل";
+    return `<div class="popup"><div class="top">${typeLabel} #${v.id}</div><div><span class="pill ${opClass}">${opLabel}</span><span class="pill ${moveClass}">${moveLabel}</span></div><div><strong>المدينة:</strong> ${city}</div><div><strong>الوقت:</strong> ${String(selectedHour).padStart(2,"0")}:00</div><div><strong>الجهة:</strong> ${v.brand || "Delivery Fleet"}</div><div><strong>المصدر:</strong> ${v.source || "Aggregated mobility signal"}</div></div>`;
+  }
+
+  function randomPoint(center, spread){
+    return [center[0] + (Math.random()-0.5)*spread, center[1] + (Math.random()-0.5)*spread*1.15];
+  }
+
+  function drawCityGlow(meta, adjustedVehicles){
+    L.circle(meta.center,{radius:16000 + adjustedVehicles*22,color:meta.color,fillColor:meta.color,fillOpacity:0.08,weight:1.2,className:"city-glow pulse"}).addTo(cityGlowLayer);
+    L.circle(meta.center,{radius:9500 + adjustedVehicles*11,color:meta.color,fillColor:meta.color,fillOpacity:0.12,weight:1}).addTo(cityGlowLayer);
+  }
+
+  function buildRoutes(meta){
+    const routes = [];
+    for(let i=0;i<meta.routes;i++){
+      const p1 = randomPoint(meta.center, meta.spread * 0.75);
+      const p2 = randomPoint(meta.center, meta.spread * 0.75);
+      routes.push(L.polyline([p1,p2],{color:meta.color,weight:1.4,opacity:0.28,dashArray:"8,10"}).addTo(routeLayer));
+    }
+    return routes;
+  }
+
+  async function fetchCityBundle(city){
+    const [dashRes, mapRes] = await Promise.all([
+      fetch(`${API_BASE}/api/dashboard?city=${city}`),
+      fetch(`${API_BASE}/api/live-map?city=${city}`)
+    ]);
+
+    if (!dashRes.ok || !mapRes.ok) {
+      throw new Error(`API request failed for ${city}`);
+    }
+
+    return { city, dashboard: await dashRes.json(), liveMap: await mapRes.json() };
+  }
+
+  function applyTimeFactorToBundle(bundle){
+    const profile = getTimeProfile(selectedHour);
+    const cityBias = bundle.city === "riyadh" ? 1.02 : (bundle.city === "jeddah" ? 0.98 : 0.94);
+    const factor = profile.factor * cityBias;
+    const adjusted = JSON.parse(JSON.stringify(bundle));
+    adjusted.dashboard.vehicles_live = Math.round((bundle.dashboard.vehicles_live || 0) * factor);
+    adjusted.dashboard.estimated_workers = Math.round((bundle.dashboard.estimated_workers || 0) * factor);
+    adjusted.dashboard.gap_percent = Number((bundle.dashboard.gap_percent || 0) * (0.88 + factor/4)).toFixed(1) * 1;
+    if (adjusted.dashboard.zones) {
+      adjusted.dashboard.zones = adjusted.dashboard.zones.map(z => ({...z, estimated_workers: Math.round((z.estimated_workers || 0) * factor)}));
+    }
+    return adjusted;
+  }
+
+  function buildHeatPoints(bundle){
+    const meta = CITY_META[bundle.city];
+    const profile = getTimeProfile(selectedHour);
+    const points = [];
+    const count = Math.round((26 * meta.weight) + 10);
+    const intensity = clamp(((bundle.dashboard.vehicles_live || 0) / 320) * profile.heat, 0.22, 1);
+    for(let i=0;i<count;i++){
+      const p = randomPoint(meta.center, meta.spread);
+      const drift = (i / count) * 0.18;
+      points.push([p[0], p[1], clamp(intensity + drift, 0.22, 1)]);
+    }
+    return points;
+  }
+
+  function normalizeVehicles(bundle){
+    const meta = CITY_META[bundle.city];
+    const raw = bundle.liveMap.vehicles || [];
+    const target = clamp(Math.round((bundle.dashboard.vehicles_live || raw.length) * (meta.weight / 4.2)), 14, 90);
+    const out = [];
+    for(let i=0;i<target;i++){
+      const rp = randomPoint(meta.center, meta.spread);
+      const base = raw[i % raw.length] || {};
+      out.push({
+        id:`${bundle.city}-${i+1}`, city:bundle.city,
+        lat: typeof base.lat === "number" ? base.lat : rp[0],
+        lng: typeof base.lng === "number" ? base.lng : rp[1],
+        operator_type: base.operator_type || (Math.random() > 0.42 ? "app" : "store"),
+        vehicle_type: base.vehicle_type || (Math.random() > 0.45 ? "motorcycle" : "car"),
+        movable: typeof base.movable === "boolean" ? base.movable : Math.random() > 0.22,
+        brand: base.brand || "Fleet", source: base.source || "Aggregated signal",
+        marker:null, target:randomPoint(meta.center, meta.spread * 0.72)
+      });
+    }
+    return out;
+  }
+
+  function rebuildVisuals(bundles){
+    vehicleLayer.clearLayers(); routeLayer.clearLayers(); cityGlowLayer.clearLayers();
+    vehiclesStore.length = 0; routeStore.length = 0;
+    const heatPoints = [];
+    bundles.forEach(bundle => {
+      const meta = CITY_META[bundle.city];
+      drawCityGlow(meta, bundle.dashboard.vehicles_live || 0);
+      routeStore.push(...buildRoutes(meta));
+      heatPoints.push(...buildHeatPoints(bundle));
+      normalizeVehicles(bundle).forEach(v => {
+        v.marker = L.marker([v.lat,v.lng],{icon:vehicleIcon(v.vehicle_type, v.operator_type), keyboard:false}).bindPopup(popupHtml(v)).addTo(vehicleLayer);
+        vehiclesStore.push(v);
+      });
+    });
+    heatLayer.setLatLngs(heatPoints);
+  }
+
+  function moveVehicle(v){
+    if(!v.movable) return;
+    const current = v.marker.getLatLng();
+    const dLat = v.target[0] - current.lat;
+    const dLng = v.target[1] - current.lng;
+    const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+    const step = 0.00115;
+    if(dist < step){
+      v.target = randomPoint(CITY_META[v.city].center, CITY_META[v.city].spread * 0.74);
+      return;
+    }
+    v.marker.setLatLng([current.lat + (dLat / dist) * step, current.lng + (dLng / dist) * step]);
+  }
+
+  function animateRoutes(){
+    routeStore.forEach(line => {
+      const current = line.options.dashOffset || 0;
+      line.setStyle({dashOffset: current + 1.2});
+    });
+  }
+
+  function startLoops(){
+    setInterval(() => {
+      if(!moving) return;
+      vehiclesStore.forEach(moveVehicle);
+      if(routesVisible) animateRoutes();
+      document.getElementById("movingCount").textContent = fmt(vehiclesStore.filter(v => v.movable).length);
+    }, 700);
+  }
+
+  function updateSidebarAndKPIs(bundles){
+    const stats = bundles.map(b => ({
+      city:b.city, label:CITY_META[b.city].label, workers:b.dashboard.estimated_workers || 0,
+      vehicles:b.dashboard.vehicles_live || 0, gap:b.dashboard.gap_percent || 0, zones:b.dashboard.zones || []
+    }));
+    latestStats = stats;
+    const totalWorkers = stats.reduce((a,b)=>a+b.workers,0);
+    const totalVehicles = stats.reduce((a,b)=>a+b.vehicles,0);
+    const avgGap = stats.length ? stats.reduce((a,b)=>a+Math.abs(b.gap),0)/stats.length : 0;
+    const dominant = [...stats].sort((a,b)=>b.vehicles-a.vehicles)[0];
+
+    document.getElementById("dominantCity").textContent = dominant ? dominant.label : "—";
+    document.getElementById("avgGap").textContent = `${avgGap.toFixed(1)}%`;
+    document.getElementById("totalVehicles").textContent = fmt(totalVehicles);
+    document.getElementById("totalWorkers").textContent = fmt(totalWorkers);
+
+    const confidence = calculateConfidence(totalVehicles, avgGap);
+    const prediction = predictNextHour(totalVehicles);
+    const diff = compareScenarios(totalVehicles);
+
+    document.getElementById("aiConfidence").textContent = confidence + "%";
+    document.getElementById("prediction").textContent = fmt(prediction);
+    document.getElementById("scenarioDiff").textContent = diff > 0 ? "+" + fmt(diff) : fmt(diff);
+
+    stats.forEach(s => {
+      document.getElementById(`${s.city}-vehicles`).textContent = fmt(s.vehicles);
+      document.getElementById(`${s.city}-workers`).textContent = fmt(s.workers);
+      document.getElementById(`pill-${s.city}`).textContent = fmt(s.vehicles);
+    });
+
+    const ranking = document.getElementById("rankingTable");
+    ranking.querySelectorAll(".row.data").forEach(el => el.remove());
+    [...stats].sort((a,b)=>b.workers-a.workers).forEach(s => {
+      const row = document.createElement("div");
+      row.className = "row data";
+      row.innerHTML = `<div><strong>${s.label}</strong></div><div>${fmt(s.workers)}</div><div>${fmt(s.vehicles)}</div><div>${s.gap.toFixed(1)}%</div>`;
+      ranking.appendChild(row);
+    });
+
+    updatePressureAlert(stats);
+    return stats;
+  }
+
+  function updatePressureAlert(stats){
+    const top = [...stats].sort((a,b)=>b.vehicles-a.vehicles)[0];
+    const profile = getTimeProfile(selectedHour);
+    let msg = "لا يوجد ضغط حرج حاليًا.";
+    if(top && top.vehicles > 230){
+      msg = `تنبيه: يوجد ضغط مرتفع في ${top.label} خلال ${profile.label}. يوصى بزيادة الدعم التشغيلي فورًا.`;
+    }else if(top && top.vehicles > 180){
+      msg = `تنبيه متوسط: ${top.label} تظهر نشاطًا ملحوظًا خلال ${profile.label}. راقب الأداء ووزّع الأسطول بحذر.`;
+    }
+    document.getElementById("pressureAlert").textContent = msg;
+  }
+
+  function generateRecommendation(){
+    if(!latestStats.length) return;
+    const top = [...latestStats].sort((a,b)=>b.vehicles-a.vehicles)[0];
+    const low = [...latestStats].sort((a,b)=>a.vehicles-b.vehicles)[0];
+    const profile = getTimeProfile(selectedHour);
+    let text = `القرار المقترح عند الساعة ${String(selectedHour).padStart(2,"0")}:00: `;
+    if(profile.label === "المساء"){
+      text += `رفع عدد مركبات ${top.label} بنسبة 15%، وتحويل جزء من الأسطول من ${low.label} إلى المناطق الأعلى طلبًا، مع إعطاء أولوية لمسارات التسليم السريع.`;
+    } else if(profile.label === "الصباح"){
+      text += `تركيز المركبات قرب المحاور التجارية ومناطق الانطلاق المبكر، مع مراقبة ${top.label} كمدينة أولى للنمو الصباحي.`;
+    } else if(profile.label === "الظهيرة"){
+      text += `تعزيز الدعم قرب المطاعم ومناطق الغداء في ${top.label}، وتقليل زمن الانتظار عبر إعادة توجيه الدراجات السريعة.`;
+    } else {
+      text += `الحفاظ على حد تشغيل اقتصادي، وتقليل التوزيع في المناطق منخفضة الطلب، مع إبقاء تغطية مرنة في ${top.label}.`;
+    }
+    document.getElementById("recommendationText").textContent = text;
+  }
+
+  function buildCharts(stats){
+    const labels = stats.map(s => s.label), workers = stats.map(s => s.workers), vehicles = stats.map(s => s.vehicles), gaps = stats.map(s => Math.abs(s.gap));
+    const zoneLabels = [], zoneValues = [];
+    stats.forEach(s => s.zones.forEach(z => { zoneLabels.push(`${s.label} — ${z.zone}`); zoneValues.push(z.estimated_workers); }));
+
+    if(cityChart) cityChart.destroy();
+    cityChart = new Chart(document.getElementById("cityChart"),{
+      type:"bar",
+      data:{labels,datasets:[{label:"Estimated Workers",data:workers,borderWidth:1}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:"#d8e7ff"}},y:{grid:{color:"rgba(255,255,255,.08)"},ticks:{color:"#d8e7ff"}}}}
+    });
+
+    if(activityChart) activityChart.destroy();
+    activityChart = new Chart(document.getElementById("activityChart"),{
+      type:"line",
+      data:{labels,datasets:[{label:"Vehicles",data:vehicles,tension:.35,borderWidth:2,pointRadius:3},{label:"Gap %",data:gaps,tension:.35,borderWidth:2,pointRadius:3}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:"#d8e7ff"}}},scales:{x:{grid:{display:false},ticks:{color:"#d8e7ff"}},y:{grid:{color:"rgba(255,255,255,.08)"},ticks:{color:"#d8e7ff"}}}}
+    });
+
+    if(zonesChart) zonesChart.destroy();
+    zonesChart = new Chart(document.getElementById("zonesChart"),{
+      type:"bar",
+      data:{labels:zoneLabels,datasets:[{label:"Zone Estimate",data:zoneValues,borderWidth:1}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:"#d8e7ff"}},y:{grid:{color:"rgba(255,255,255,.08)"},ticks:{color:"#d8e7ff"}}}}
+    });
+  }
+
+
+  let previousVehicles = 0;
+
+  function calculateConfidence(totalVehicles, avgGap){
+    let score = 100 - Math.abs(avgGap);
+    if(totalVehicles > 200) score += 5;
+    return Math.min(100, Math.max(70, Math.round(score)));
+  }
+
+  function predictNextHour(currentVehicles){
+    const profile = getTimeProfile(selectedHour);
+    const factor = profile.label === "المساء" ? 1.12 : profile.label === "الظهيرة" ? 1.08 : profile.label === "الصباح" ? 1.05 : 0.93;
+    return Math.round(currentVehicles * factor);
+  }
+
+  function compareScenarios(currentVehicles){
+    const diff = currentVehicles - previousVehicles;
+    previousVehicles = currentVehicles;
+    return diff;
+  }
+
+  async function refreshAll(){
+    try{
+      const bundles = await Promise.all(CITY_KEYS.map(fetchCityBundle));
+      const adjusted = bundles.map(applyTimeFactorToBundle);
+      const stats = updateSidebarAndKPIs(adjusted);
+      buildCharts(stats);
+      rebuildVisuals(adjusted);
+      document.getElementById("movingCount").textContent = fmt(vehiclesStore.filter(v => v.movable).length);
+    }catch(err){
+      console.error(err);
+      document.getElementById("pressureAlert").textContent = "تعذر تحديث البيانات حاليًا. قد يكون الخادم في طور الاستجابة الأولى، أعيدي المحاولة بعد لحظات.";
+    }
+  }
+
+  function activateScenario(btn){
+    document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedHour = Number(btn.dataset.hour);
+    document.getElementById("timeSlider").value = selectedHour;
+    document.getElementById("scenarioNote").textContent = btn.dataset.note || "";
+    updateTimeUI();
+    refreshAll();
+    generateRecommendation();
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", refreshAll);
+  document.getElementById("toggleHeatBtn").addEventListener("click", () => {
+    heatVisible = !heatVisible;
+    if(heatVisible) heatLayer.addTo(map); else map.removeLayer(heatLayer);
+  });
+  document.getElementById("toggleMoveBtn").addEventListener("click", () => { moving = !moving; });
+  document.getElementById("toggleRoutesBtn").addEventListener("click", () => {
+    routesVisible = !routesVisible;
+    if(routesVisible) routeLayer.addTo(map); else map.removeLayer(routeLayer);
+  });
+  document.getElementById("recommendBtn").addEventListener("click", generateRecommendation);
+  document.getElementById("timeSlider").addEventListener("input", (e) => {
+    selectedHour = Number(e.target.value);
+    document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
+    updateTimeUI();
+    refreshAll();
+  });
+  document.querySelectorAll(".scenario-btn").forEach(btn => {
+    btn.addEventListener("click", () => activateScenario(btn));
+  });
+
+  updateTimeUI();
+  refreshAll();
+  startLoops();
+  setInterval(refreshAll, 14000);
+</script>
+</body>
+</html>
