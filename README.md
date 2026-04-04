@@ -34,8 +34,11 @@ signals into **real-time workforce intelligence**.
 
 ## 🚀 Live Experience
 
-🌐 Dashboard: https://glistening-peony-77998a.netlify.app\
-🎬 Video: https://youtu.be/VdJCsfWqFGQ
+### 🌐 Interactive Dashboard
+[Open GigScope Dashboard](https://glistening-peony-77998a.netlify.app)
+
+### 🎬 Demo Video
+[Watch Demo Video](https://youtu.be/VdJCsfWqFGQ)
 
 ------------------------------------------------------------------------
 
