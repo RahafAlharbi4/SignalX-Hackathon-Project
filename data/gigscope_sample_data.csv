@@ -1,1 +1,13 @@
-
+city,time_window,google_trend_score,platform_activity_index,mobility_index,estimated_workers,confidence_level
+Riyadh,Morning,78,65,72,820,0.87
+Riyadh,Afternoon,85,72,80,910,0.90
+Riyadh,Night,92,88,85,1100,0.94
+Jeddah,Morning,70,60,68,750,0.85
+Jeddah,Afternoon,82,75,77,880,0.89
+Jeddah,Night,88,83,81,1020,0.92
+Dammam,Morning,65,58,60,600,0.82
+Dammam,Afternoon,72,66,70,720,0.86
+Dammam,Night,80,78,75,890,0.91
+Abha,Morning,55,50,52,480,0.80
+Abha,Afternoon,60,58,57,530,0.83
+Abha,Night,68,65,63,620,0.86
