@@ -160,8 +160,18 @@ This shifts the paradigm from:
 
 ## 👩‍💻 Project Information
 
-**Project Name:** GigScope  
-**Supervisor:** Noof Al-Khabti  
+**Project Name:** GigScope
+
+## 👑 Team Leader
+
+* Noof Al-Khabti
+
+## 👥 Team Members
+
+* Rahaf Alharbi
+* Sundus Mohammed
+* Ahmed Al-Salouli
+* Dalia Al-Dalil
 
 ---
 
