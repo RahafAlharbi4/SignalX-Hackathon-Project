@@ -162,11 +162,11 @@ This shifts the paradigm from:
 
 **Project Name:** GigScope
 
-## 👑 Team Leader
+# 👑 Team Leader
 
 * Noof Al-Khabti
 
-## 👥 Team Members
+# 👥 Team Members
 
 * Rahaf Alharbi
 * Sundus Mohammed
